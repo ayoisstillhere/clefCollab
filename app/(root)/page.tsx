@@ -1,3 +1,4 @@
+import ThreadCard from "@/components/cards/ThreadCard";
 import { fetchThreads } from "@/lib/actions/thread.actions";
 import { currentUser } from "@clerk/nextjs";
 
@@ -18,9 +19,9 @@ const Home = async () => {
               <ThreadCard
                 key={thread._id}
                 id={thread._id}
-                currentUserId={user?.id}
+                currentUserId={user?.id || ""}
                 parentId={thread.parentId}
-                content = {thread.text}
+                content={thread.text}
                 author={thread.author}
                 community={thread.community}
                 createdAt={thread.createdAt}
