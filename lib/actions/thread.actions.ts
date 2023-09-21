@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import Thread from "../models/thread.model";
 import User from "../models/user.model";
 import { connectToDB } from "../mongoose";
+import { number } from "zod";
 
 interface Params {
   text: string;
@@ -37,4 +38,38 @@ export async function createThread({
   } catch (error: any) {
     throw new Error(`Error creating thread: ${error.message}`);
   }
+}
+
+export async function fetchThreads(pageNumber = 1, pageSize = 20) {
+  connectToDB();
+
+  // Calculate the number of threads to skip
+  const skipAmount = pageSize * (pageNumber - 1);
+
+  // Fetch the threads that have no parents (top level threads...)
+  const threadQuery = Thread.find({
+    parentId: { $in: [null, undefined] },
+  })
+    .sort({ createdAt: "desc" })
+    .skip(skipAmount)
+    .limit(pageSize)
+    .populate({ path: "author", model: User })
+    .populate({
+      path: "children",
+      populate: {
+        path: "author",
+        model: User,
+        select: "_id name parentId image",
+      },
+    });
+
+  const totalThreadsCount = await Thread.countDocuments({
+    parentId: { $in: [null, undefined] },
+  });
+
+  const threads = await threadQuery.exec();
+
+  const isNext = totalThreadsCount > skipAmount + threads.length;
+
+  return { threads, isNext };
 }
