@@ -45,8 +45,6 @@ const Comment = ({ threadId, currentUserImg, currentUserId }: Props) => {
     );
 
     form.reset();
-
-    router.push("/");
   };
 
   return (
