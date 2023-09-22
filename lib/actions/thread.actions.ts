@@ -4,7 +4,6 @@ import { revalidatePath } from "next/cache";
 import Thread from "../models/thread.model";
 import User from "../models/user.model";
 import { connectToDB } from "../mongoose";
-import { error } from "console";
 
 interface Params {
   text: string;
@@ -109,5 +108,43 @@ export async function fetchThreadById(id: string) {
     return thread;
   } catch (error: any) {
     throw new Error(`Error fetching thread: ${error.message}`);
+  }
+}
+
+export async function addCommentToThread(
+  threadId: string,
+  commentText: string,
+  userId: string,
+  path: string
+) {
+  connectToDB();
+
+  try {
+    // Find the Original thread by its ID
+    const originalThread = await Thread.findById(threadId);
+
+    if (!originalThread) {
+      throw new Error("Thread not found");
+    }
+
+    // Create a new thread with the comment text
+    const commentThread = new Thread({
+      text: commentText,
+      author: userId,
+      parentId: threadId,
+    });
+
+    // Save the new thread
+    const savedCommentThread = await commentThread.save();
+
+    //update the original thread to include the new comment
+    originalThread.children.push(savedCommentThread._id);
+
+    //save the original thread
+    await originalThread.save();
+
+    revalidatePath(path);
+  } catch (error: any) {
+    throw new Error(`Error adding comment to thread: ${error.message}`);
   }
 }
